@@ -32,6 +32,19 @@ export interface SohAdjustment {
   };
 }
 
+export interface SohChangePreview {
+  itemId: number;
+  itemName: string;
+  selectedMonth: string;
+  currentOpeningSoh: number;
+  newOpeningSoh: number;
+  currentSohNow: number;
+  projectedSohAfterChange: number;
+  difference: number;
+  transactionsAfterMonth: number;
+  warning: string;
+}
+
 export const sohService = {
   // Get monthly snapshots for a specific month
   async getMonthlySnapshots(year: number, month: number): Promise<MonthlySnapshot[]> {
@@ -90,6 +103,22 @@ export const sohService = {
       date,
       new_soh: newSoh,
       reason,
+    });
+    return data;
+  },
+
+  // Preview the impact of changing monthly opening SOH
+  async previewSohChange(
+    itemId: number,
+    year: number,
+    month: number,
+    newOpeningSoh: number
+  ): Promise<SohChangePreview> {
+    const { data } = await api.post('/soh/preview', {
+      item_id: itemId,
+      year,
+      month,
+      new_opening_soh: newOpeningSoh,
     });
     return data;
   },
