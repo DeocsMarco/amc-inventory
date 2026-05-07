@@ -179,13 +179,13 @@ export default function SohManagement() {
                       return (
                         <tr key={item.id}>
                           <td className="font-medium">{item.name}</td>
-                          <td className="text-gray-600 text-sm">{item.category?.name}</td>
+                          <td className="text-gray-600 text-sm">{item.categoryName}</td>
                           <td className="text-right">
                             <input
                               type="number"
                               className="input w-32 text-right"
                               defaultValue={snapshot?.opening_soh ?? ''}
-                              placeholder={item.initial_soh?.toString() || '0'}
+                              placeholder={item.initialSoh?.toString() || '0'}
                               onBlur={(e) => handleSohChange(item.id, e.target.value)}
                             />
                           </td>
