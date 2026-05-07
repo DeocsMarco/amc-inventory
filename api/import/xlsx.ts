@@ -8,6 +8,7 @@ export const config = {
   api: {
     bodyParser: false,
   },
+  maxDuration: 60, // Max duration (Pro plan: 60s, Hobby: 10s)
 };
 
 const CATEGORY_NAMES = [
@@ -43,6 +44,21 @@ async function parseFile(req: VercelRequest): Promise<string> {
   });
 }
 
+interface ParsedItem {
+  name: string;
+  category: string;
+  qtyPerUnit: number;
+  unit: string;
+  initialSoh: number;
+}
+
+interface ParsedTransaction {
+  itemName: string;
+  date: string;
+  type: 'IN' | 'OUT';
+  quantity: number;
+}
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
@@ -56,25 +72,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const workbook = new ExcelJS.Workbook();
     await workbook.xlsx.readFile(filePath);
 
-    let categoriesCreated = 0;
-    let itemsCreated = 0;
-    let itemsUpdated = 0;
-    let transactionsCreated = 0;
+    // Phase 1: Parse all data from Excel (no DB calls)
+    const allItems: ParsedItem[] = [];
+    const allTransactions: ParsedTransaction[] = [];
+    const categoriesFound = new Set<string>();
     const sheetsProcessed: string[] = [];
-
-    // Get existing categories
-    const { data: existingCategories } = await supabase.from('categories').select('id, name');
-    const categoryMap = new Map<string, number>();
-    for (const cat of existingCategories || []) {
-      categoryMap.set(cat.name, cat.id);
-    }
-
-    // Get existing items
-    const { data: existingItems } = await supabase.from('items').select('id, name');
-    const itemMap = new Map<string, number>();
-    for (const item of existingItems || []) {
-      itemMap.set(item.name, item.id);
-    }
 
     for (const worksheet of workbook.worksheets) {
       sheetsProcessed.push(worksheet.name);
@@ -88,6 +90,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           dates.push({ col, date: formatDate(cell.value) });
         }
       }
+
+      if (dates.length === 0) continue;
 
       // Parse items starting from row 9
       let row = 9;
@@ -103,17 +107,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         // Check if category header
         if (nameValue && !cellE && !cellF && CATEGORY_NAMES.includes(nameValue)) {
           currentCategory = nameValue;
-          if (!categoryMap.has(currentCategory)) {
-            const { data } = await supabase
-              .from('categories')
-              .insert({ name: currentCategory })
-              .select()
-              .single();
-            if (data) {
-              categoryMap.set(currentCategory, data.id);
-              categoriesCreated++;
-            }
-          }
+          categoriesFound.add(currentCategory);
           row++;
           continue;
         }
@@ -123,81 +117,130 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           const qtyPerUnit = parseFloat(cellE?.toString() || '1') || 1;
           const unit = cellF?.toString() || 'PC';
           const initialSoh = parseFloat(cellG?.toString() || '0') || 0;
-          const categoryId = categoryMap.get(currentCategory || 'MISCELLANEOUS') || 1;
 
-          let itemId = itemMap.get(nameValue);
-
-          if (!itemId) {
-            const { data } = await supabase
-              .from('items')
-              .insert({
-                name: nameValue,
-                category_id: categoryId,
-                qty_per_unit: qtyPerUnit,
-                unit,
-                initial_soh: initialSoh,
-              })
-              .select()
-              .single();
-            if (data) {
-              itemId = data.id;
-              itemMap.set(nameValue, itemId);
-              itemsCreated++;
-            }
-          } else {
-            itemsUpdated++;
+          // Add item if not already in list
+          if (!allItems.find(i => i.name === nameValue)) {
+            allItems.push({
+              name: nameValue,
+              category: currentCategory || 'MISCELLANEOUS',
+              qtyPerUnit,
+              unit,
+              initialSoh,
+            });
           }
 
-          if (itemId) {
-            // Parse IN transactions
-            const inTransactions = [];
+          // Parse IN transactions
+          for (const { col, date } of dates) {
+            const val = worksheet.getCell(row, col).value;
+            const qty = parseFloat(val?.toString() || '0') || 0;
+            if (qty > 0) {
+              allTransactions.push({ itemName: nameValue, date, type: 'IN', quantity: qty });
+            }
+          }
+
+          // Parse OUT transactions (next row)
+          const nextRow = row + 1;
+          if (worksheet.getCell(nextRow, 8).value?.toString().toUpperCase() === 'OUT') {
             for (const { col, date } of dates) {
-              const val = worksheet.getCell(row, col).value;
+              const val = worksheet.getCell(nextRow, col).value;
               const qty = parseFloat(val?.toString() || '0') || 0;
               if (qty > 0) {
-                inTransactions.push({ item_id: itemId, date, type: 'IN', quantity: qty });
+                allTransactions.push({ itemName: nameValue, date, type: 'OUT', quantity: qty });
               }
             }
-
-            // Parse OUT transactions (next row)
-            const outTransactions = [];
-            const nextRow = row + 1;
-            if (worksheet.getCell(nextRow, 8).value?.toString().toUpperCase() === 'OUT') {
-              for (const { col, date } of dates) {
-                const val = worksheet.getCell(nextRow, col).value;
-                const qty = parseFloat(val?.toString() || '0') || 0;
-                if (qty > 0) {
-                  outTransactions.push({ item_id: itemId, date, type: 'OUT', quantity: qty });
-                }
-              }
-              row++;
-            }
-
-            // Insert transactions
-            const allTransactions = [...inTransactions, ...outTransactions];
-            if (allTransactions.length > 0) {
-              const { error } = await supabase.from('transactions').insert(allTransactions);
-              if (!error) {
-                transactionsCreated += allTransactions.length;
-              }
-            }
+            row++;
           }
         }
-
         row++;
       }
     }
 
-    // Cleanup
+    // Cleanup file early
     if (filePath) {
       fs.unlinkSync(filePath);
+      filePath = null;
+    }
+
+    // Phase 2: Get existing data from DB (2 queries)
+    const [{ data: existingCategories }, { data: existingItems }] = await Promise.all([
+      supabase.from('categories').select('id, name'),
+      supabase.from('items').select('id, name'),
+    ]);
+
+    const categoryMap = new Map<string, number>();
+    for (const cat of existingCategories || []) {
+      categoryMap.set(cat.name, cat.id);
+    }
+
+    const itemMap = new Map<string, number>();
+    for (const item of existingItems || []) {
+      itemMap.set(item.name, item.id);
+    }
+
+    // Phase 3: Insert new categories (batch)
+    const newCategories = Array.from(categoriesFound).filter(c => !categoryMap.has(c));
+    let categoriesCreated = 0;
+    if (newCategories.length > 0) {
+      const { data } = await supabase
+        .from('categories')
+        .insert(newCategories.map(name => ({ name })))
+        .select();
+      if (data) {
+        for (const cat of data) {
+          categoryMap.set(cat.name, cat.id);
+        }
+        categoriesCreated = data.length;
+      }
+    }
+
+    // Phase 4: Insert new items (batch)
+    const newItems = allItems.filter(i => !itemMap.has(i.name));
+    let itemsCreated = 0;
+    if (newItems.length > 0) {
+      const { data } = await supabase
+        .from('items')
+        .insert(newItems.map(item => ({
+          name: item.name,
+          category_id: categoryMap.get(item.category) || 1,
+          qty_per_unit: item.qtyPerUnit,
+          unit: item.unit,
+          initial_soh: item.initialSoh,
+        })))
+        .select();
+      if (data) {
+        for (const item of data) {
+          itemMap.set(item.name, item.id);
+        }
+        itemsCreated = data.length;
+      }
+    }
+
+    // Phase 5: Insert transactions (batch in chunks of 500)
+    let transactionsCreated = 0;
+    const transactionsToInsert = allTransactions
+      .filter(t => itemMap.has(t.itemName))
+      .map(t => ({
+        item_id: itemMap.get(t.itemName)!,
+        date: t.date,
+        type: t.type,
+        quantity: t.quantity,
+      }));
+
+    // Insert in chunks to avoid payload size limits
+    const chunkSize = 500;
+    for (let i = 0; i < transactionsToInsert.length; i += chunkSize) {
+      const chunk = transactionsToInsert.slice(i, i + chunkSize);
+      const { error } = await supabase.from('transactions').insert(chunk);
+      if (!error) {
+        transactionsCreated += chunk.length;
+      }
     }
 
     return res.json({
       message: 'Import successful',
       categoriesCreated,
       itemsCreated,
-      itemsUpdated,
+      itemsUpdated: allItems.length - newItems.length,
       transactionsCreated,
       sheetsProcessed,
     });
