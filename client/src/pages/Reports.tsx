@@ -110,11 +110,10 @@ export default function Reports() {
               <tr>
                 <th>Item</th>
                 <th>Category</th>
-                <th className="text-right">Initial SOH</th>
-                <th className="text-right">Total IN</th>
-                <th className="text-right">Total OUT</th>
+                <th>Section</th>
                 <th className="text-right">Current SOH</th>
                 <th className="text-right">Lots</th>
+                <th className="text-right">Coverage</th>
               </tr>
             </thead>
             <tbody>
@@ -122,15 +121,24 @@ export default function Reports() {
                 <tr key={item.itemId}>
                   <td className="font-medium">{item.itemName}</td>
                   <td className="text-gray-600 text-sm">{item.categoryName}</td>
-                  <td className="text-right">{item.initialSoh.toLocaleString()}</td>
-                  <td className="text-right text-green-600">{item.totalIn.toLocaleString()}</td>
-                  <td className="text-right text-red-600">{item.totalOut.toLocaleString()}</td>
+                  <td className="text-gray-600 text-sm">{item.sectionName || '-'}</td>
                   <td className="text-right font-medium">
                     <span className={item.currentSoh < 100 ? 'text-red-600' : ''}>
                       {item.currentSoh.toLocaleString()}
                     </span>
                   </td>
                   <td className="text-right">{item.lotsCovered.toFixed(1)}</td>
+                  <td className="text-right text-sm">
+                    {item.lotStart && item.lotEnd ? (
+                      <span className="text-blue-600 font-medium">
+                        {item.lotStart} - {item.lotEnd}
+                      </span>
+                    ) : item.sectionName ? (
+                      <span className="text-gray-400">No coverage</span>
+                    ) : (
+                      <span className="text-gray-400">-</span>
+                    )}
+                  </td>
                 </tr>
               ))}
             </tbody>

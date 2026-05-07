@@ -7,11 +7,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
+    // Get items with their section lots
     const { data: items, error: itemsError } = await supabase
       .from('items')
       .select(`
-        id, category_id, name, qty_per_unit, unit, initial_soh,
-        categories(name, sort_order)
+        id, category_id, name, qty_per_unit, unit, initial_soh, section_id,
+        categories(name, sort_order),
+        section_lots(id, section_name, lot_number, units_per_lot)
       `)
       .eq('is_active', true)
       .order('name');
@@ -46,7 +48,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       .map((item: any) => {
         const totals = itemTotals.get(item.id) || { totalIn: 0, totalOut: 0 };
         const currentSoh = item.initial_soh + totals.totalIn - totals.totalOut;
-        const lotsCovered = Math.floor((currentSoh / item.qty_per_unit) / UNITS_PER_LOT * 10) / 10;
+
+        // Calculate lot coverage
+        const unitsPerLot = item.section_lots?.units_per_lot || UNITS_PER_LOT;
+        const unitsPerItem = currentSoh / item.qty_per_unit;
+        const lotsCovered = Math.floor(unitsPerItem / unitsPerLot * 10) / 10;
+
+        // Calculate lot range if section is assigned
+        const sectionLot = item.section_lots;
+        let lotStart = null;
+        let lotEnd = null;
+        if (sectionLot && lotsCovered > 0) {
+          lotStart = sectionLot.lot_number;
+          lotEnd = sectionLot.lot_number + Math.floor(lotsCovered) - 1;
+          if (lotEnd < lotStart) lotEnd = lotStart;
+        }
 
         return {
           itemId: item.id,
@@ -60,6 +76,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           totalOut: totals.totalOut,
           currentSoh,
           lotsCovered,
+          // Section lot info
+          sectionId: item.section_id,
+          sectionName: sectionLot?.section_name || null,
+          currentLotNumber: sectionLot?.lot_number || null,
+          lotStart,
+          lotEnd,
         };
       });
 

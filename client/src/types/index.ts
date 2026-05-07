@@ -24,6 +24,18 @@ export interface ItemWithCategory extends Item {
 export interface ItemWithSoh extends ItemWithCategory {
   currentSoh: number;
   lotsCovered: number;
+  sectionId?: number | null;
+  sectionName?: string | null;
+  currentLotNumber?: number | null;
+  lotStart?: number | null;
+  lotEnd?: number | null;
+}
+
+export interface SectionLot {
+  id: number;
+  sectionName: string;
+  lotNumber: number;
+  unitsPerLot: number;
 }
 
 export interface CreateItemDto {
@@ -83,6 +95,11 @@ export interface SohReport {
   totalOut: number;
   currentSoh: number;
   lotsCovered: number;
+  sectionId?: number | null;
+  sectionName?: string | null;
+  currentLotNumber?: number | null;
+  lotStart?: number | null;
+  lotEnd?: number | null;
 }
 
 export interface DailySummary {
