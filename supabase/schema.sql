@@ -58,6 +58,7 @@ CREATE TABLE IF NOT EXISTS section_lots (
 );
 
 -- Seed default categories
+-- Note: PALBOND PB-N144R, ACCELARATOR AC-131, FINE CLEANER 4349 are items, not categories
 INSERT INTO categories (name, sort_order) VALUES
   ('METAL COMPONENTS', 0),
   ('TRIM PARTS', 1),
@@ -66,13 +67,10 @@ INSERT INTO categories (name, sort_order) VALUES
   ('STICKERS / EMBLEM', 4),
   ('HARDWARES', 5),
   ('SHOP SUPPLIES', 6),
-  ('PALBOND PB-N144R', 7),
-  ('ACCELARATOR AC-131', 8),
-  ('FINE CLEANER 4349', 9),
-  ('WELDING CONSUMABLE', 10),
-  ('HAND TAPS', 11),
-  ('DISCS / BLADES', 12),
-  ('MISCELLANEOUS', 13)
+  ('WELDING CONSUMABLE', 7),
+  ('HAND TAPS', 8),
+  ('DISCS / BLADES', 9),
+  ('MISCELLANEOUS', 10)
 ON CONFLICT (name) DO NOTHING;
 
 -- Seed section lots
