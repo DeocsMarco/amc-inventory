@@ -19,9 +19,7 @@ const CATEGORY_NAMES = [
   'STICKERS / EMBLEM',
   'HARDWARES',
   'SHOP SUPPLIES',
-  'PALBOND PB-N144R',
-  'ACCELARATOR AC-131',
-  'FINE CLEANER 4349',
+  // Note: PALBOND PB-N144R, ACCELARATOR AC-131, FINE CLEANER 4349 are items, not categories
   'WELDING CONSUMABLE',
   'HAND TAPS',
   'DISCS / BLADES',
@@ -30,6 +28,33 @@ const CATEGORY_NAMES = [
 
 function formatDate(date: Date): string {
   return date.toISOString().split('T')[0];
+}
+
+// Helper to extract text from cell values (handles rich text formatting)
+function getCellText(value: ExcelJS.CellValue): string {
+  if (value === null || value === undefined) return '';
+
+  // Handle rich text objects
+  if (typeof value === 'object' && 'richText' in value) {
+    return (value as { richText: { text: string }[] }).richText
+      .map(part => part.text)
+      .join('')
+      .trim();
+  }
+
+  // Handle Date objects
+  if (value instanceof Date) {
+    return value.toISOString();
+  }
+
+  // Handle other objects
+  if (typeof value === 'object') {
+    if ('text' in value) return String((value as { text: unknown }).text).trim();
+    if ('result' in value) return String((value as { result: unknown }).result).trim();
+    return '';
+  }
+
+  return String(value).trim();
 }
 
 async function parseFile(req: VercelRequest): Promise<string> {
@@ -102,8 +127,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const cellG = worksheet.getCell(row, 7).value;
         const cellH = worksheet.getCell(row, 8).value;
 
-        const nameValue = cellA?.toString().trim() || '';
-        const cellHValue = cellH?.toString().trim().toUpperCase() || '';
+        // Use getCellText to handle rich text cells properly
+        const nameValue = getCellText(cellA);
+        const cellHValue = getCellText(cellH).toUpperCase();
 
         // Check if category header
         // Category rows have the category name in A, E, and F, with H empty
@@ -117,9 +143,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
         // Check if item row
         if (nameValue && cellHValue === 'IN') {
-          const qtyPerUnit = parseFloat(cellE?.toString() || '1') || 1;
-          const unit = cellF?.toString() || 'PC';
-          const initialSoh = parseFloat(cellG?.toString() || '0') || 0;
+          const qtyPerUnit = parseFloat(getCellText(cellE) || '1') || 1;
+          const unit = getCellText(cellF) || 'PC';
+          const initialSoh = parseFloat(getCellText(cellG) || '0') || 0;
 
           // Add item if not already in list
           if (!allItems.find(i => i.name === nameValue)) {

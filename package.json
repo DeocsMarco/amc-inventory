@@ -20,6 +20,7 @@
   "dependencies": {
     "@supabase/supabase-js": "^2.43.4",
     "@vercel/node": "^3.1.7",
+    "dotenv": "^17.4.2",
     "exceljs": "^4.4.0",
     "formidable": "^3.5.1"
   },
