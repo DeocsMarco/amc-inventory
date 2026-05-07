@@ -1,5 +1,5 @@
 import api from './api';
-import type { SohReport, DailySummary, CategorySummary, MonthlyReport, DashboardStats } from '@amc/shared';
+import type { SohReport, DailySummary, CategorySummary, MonthlyReport, DashboardStats } from '../types';
 
 export const reportService = {
   async getDashboardStats(): Promise<DashboardStats> {

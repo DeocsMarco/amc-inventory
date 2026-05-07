@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { reportService } from '../services/report.service';
+import type { DailyMovement } from '../types';
 
 export default function Reports() {
   const currentYear = new Date().getFullYear();
@@ -26,7 +27,7 @@ export default function Reports() {
   ];
 
   // Prepare chart data
-  const chartData = monthlyReport?.dailyMovements.map((d) => ({
+  const chartData = monthlyReport?.dailyMovements.map((d: DailyMovement) => ({
     day: d.day,
     IN: d.totalIn,
     OUT: d.totalOut,

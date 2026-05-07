@@ -1,5 +1,5 @@
 import api from './api';
-import type { Transaction, TransactionWithItem, CreateTransactionDto, DailyTransaction } from '@amc/shared';
+import type { Transaction, TransactionWithItem, CreateTransactionDto, DailyTransaction } from '../types';
 
 export const transactionService = {
   async getTransactions(filters?: {

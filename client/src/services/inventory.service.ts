@@ -1,5 +1,5 @@
 import api from './api';
-import type { Category, ItemWithCategory, ItemWithSoh, CreateItemDto } from '@amc/shared';
+import type { Category, ItemWithCategory, ItemWithSoh, CreateItemDto } from '../types';
 
 export const inventoryService = {
   // Categories

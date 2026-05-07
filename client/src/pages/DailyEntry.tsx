@@ -4,7 +4,7 @@ import { format } from 'date-fns';
 import toast from 'react-hot-toast';
 import { inventoryService } from '../services/inventory.service';
 import { transactionService } from '../services/transaction.service';
-import type { CreateTransactionDto } from '@amc/shared';
+import type { CreateTransactionDto } from '../types';
 
 export default function DailyEntry() {
   const [selectedDate, setSelectedDate] = useState(format(new Date(), 'yyyy-MM-dd'));

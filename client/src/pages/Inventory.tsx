@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { inventoryService } from '../services/inventory.service';
-import type { Category } from '@amc/shared';
+import type { Category } from '../types';
 
 export default function Inventory() {
   const [selectedCategory, setSelectedCategory] = useState<number | undefined>();
