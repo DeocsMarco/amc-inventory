@@ -12,6 +12,8 @@ import transactionRoutes from './modules/transaction/transaction.routes';
 import reportRoutes from './modules/report/report.routes';
 import importRoutes from './modules/import/import.routes';
 import exportRoutes from './modules/export/export.routes';
+import sectionsRoutes from './modules/sections/sections.routes';
+import sohRoutes from './modules/soh/soh.routes';
 
 const app = express();
 
@@ -32,6 +34,8 @@ app.use('/api/transactions', transactionRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/api/import', importRoutes);
 app.use('/api/export', exportRoutes);
+app.use('/api/sections', sectionsRoutes);
+app.use('/api/soh', sohRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

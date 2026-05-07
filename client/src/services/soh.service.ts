@@ -48,7 +48,7 @@ export interface SohChangePreview {
 export const sohService = {
   // Get monthly snapshots for a specific month
   async getMonthlySnapshots(year: number, month: number): Promise<MonthlySnapshot[]> {
-    const { data } = await api.get(`/soh/monthly?year=${year}&month=${month}`);
+    const { data } = await api.get(`/soh?action=monthly&year=${year}&month=${month}`);
     return data;
   },
 
@@ -59,7 +59,7 @@ export const sohService = {
     month: number,
     openingSoh: number
   ): Promise<MonthlySnapshot> {
-    const { data } = await api.post('/soh/monthly', {
+    const { data } = await api.post('/soh?action=monthly', {
       item_id: itemId,
       year,
       month,
@@ -74,7 +74,7 @@ export const sohService = {
     month: number,
     items: { item_id: number; opening_soh: number }[]
   ): Promise<{ updated: number }> {
-    const { data } = await api.put('/soh/monthly', {
+    const { data } = await api.put('/soh?action=monthly', {
       year,
       month,
       items,
@@ -85,9 +85,10 @@ export const sohService = {
   // Get adjustment history
   async getAdjustments(itemId?: number, limit = 50): Promise<SohAdjustment[]> {
     const params = new URLSearchParams();
+    params.append('action', 'adjust');
     if (itemId) params.append('item_id', itemId.toString());
     params.append('limit', limit.toString());
-    const { data } = await api.get(`/soh/adjust?${params}`);
+    const { data } = await api.get(`/soh?${params}`);
     return data;
   },
 
@@ -98,7 +99,7 @@ export const sohService = {
     newSoh: number,
     reason?: string
   ): Promise<SohAdjustment> {
-    const { data } = await api.post('/soh/adjust', {
+    const { data } = await api.post('/soh?action=adjust', {
       item_id: itemId,
       date,
       new_soh: newSoh,
@@ -114,7 +115,7 @@ export const sohService = {
     month: number,
     newOpeningSoh: number
   ): Promise<SohChangePreview> {
-    const { data } = await api.post('/soh/preview', {
+    const { data } = await api.post('/soh?action=preview', {
       item_id: itemId,
       year,
       month,

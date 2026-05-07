@@ -31,8 +31,8 @@ export const inventoryService = {
     return data;
   },
 
-  async updateItem(id: number, dto: Partial<CreateItemDto>): Promise<ItemWithCategory> {
-    const { data } = await api.put(`/items/${id}`, dto);
+  async updateItem(id: number, dto: Partial<CreateItemDto & { sectionId?: number | null }>): Promise<ItemWithCategory> {
+    const { data } = await api.put('/items', { id, ...dto });
     return data;
   },
 
