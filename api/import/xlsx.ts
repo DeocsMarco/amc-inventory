@@ -103,9 +103,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const cellH = worksheet.getCell(row, 8).value;
 
         const nameValue = cellA?.toString().trim() || '';
+        const cellHValue = cellH?.toString().trim().toUpperCase() || '';
 
         // Check if category header
-        if (nameValue && !cellE && !cellF && CATEGORY_NAMES.includes(nameValue)) {
+        // Category rows have the category name in A, E, and F, with H empty
+        // Item rows have H = "IN"
+        if (nameValue && CATEGORY_NAMES.includes(nameValue) && !cellHValue) {
           currentCategory = nameValue;
           categoriesFound.add(currentCategory);
           row++;
@@ -113,7 +116,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         }
 
         // Check if item row
-        if (nameValue && cellH?.toString().toUpperCase() === 'IN') {
+        if (nameValue && cellHValue === 'IN') {
           const qtyPerUnit = parseFloat(cellE?.toString() || '1') || 1;
           const unit = cellF?.toString() || 'PC';
           const initialSoh = parseFloat(cellG?.toString() || '0') || 0;
