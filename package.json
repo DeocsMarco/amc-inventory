@@ -1,0 +1,32 @@
+{
+  "name": "amc-inventory",
+  "version": "1.0.0",
+  "description": "AMC Inventory Management System",
+  "private": true,
+  "workspaces": [
+    "client",
+    "server",
+    "shared"
+  ],
+  "scripts": {
+    "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\"",
+    "dev:client": "npm run dev -w client",
+    "dev:server": "npm run dev -w server",
+    "dev:vercel": "vercel dev",
+    "build": "npm run build -w shared && npm run build -w client",
+    "start": "npm run start -w server",
+    "vercel-build": "cd client && npm run build"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.43.4",
+    "@vercel/node": "^3.1.7",
+    "exceljs": "^4.4.0",
+    "formidable": "^3.5.1"
+  },
+  "devDependencies": {
+    "@types/formidable": "^3.4.5",
+    "concurrently": "^8.2.2",
+    "typescript": "^5.4.5",
+    "vercel": "^53.2.0"
+  }
+}
