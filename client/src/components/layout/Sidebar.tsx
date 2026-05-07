@@ -4,6 +4,7 @@ const navItems = [
   { path: '/', label: 'Dashboard', icon: '📊' },
   { path: '/inventory', label: 'Inventory', icon: '📦' },
   { path: '/daily', label: 'Daily Entry', icon: '📝' },
+  { path: '/soh', label: 'SOH Management', icon: '📋' },
   { path: '/reports', label: 'Reports', icon: '📈' },
   { path: '/import', label: 'Import/Export', icon: '📁' },
 ];

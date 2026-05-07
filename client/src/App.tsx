@@ -5,6 +5,7 @@ import Inventory from './pages/Inventory';
 import DailyEntry from './pages/DailyEntry';
 import Reports from './pages/Reports';
 import Import from './pages/Import';
+import SohManagement from './pages/SohManagement';
 
 function App() {
   return (
@@ -15,6 +16,7 @@ function App() {
         <Route path="/daily" element={<DailyEntry />} />
         <Route path="/reports" element={<Reports />} />
         <Route path="/import" element={<Import />} />
+        <Route path="/soh" element={<SohManagement />} />
       </Routes>
     </Layout>
   );

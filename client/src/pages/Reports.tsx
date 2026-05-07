@@ -47,7 +47,7 @@ export default function Reports() {
               value={selectedYear}
               onChange={(e) => setSelectedYear(parseInt(e.target.value))}
             >
-              {[2023, 2024, 2025, 2026].map((year) => (
+              {Array.from({ length: 5 }, (_, i) => currentYear - 2 + i).map((year) => (
                 <option key={year} value={year}>{year}</option>
               ))}
             </select>
